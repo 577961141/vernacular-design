@@ -694,3 +694,188 @@ $emergencyProjects->setHour(22);
 当前时间：19点 加班哦，疲累之极
 当前时间：22点 不行了，睡着了。
 ```
+
+## 第十七章 适配器模式
+
+### 17.2 适配器模式
+
+适配器模式（Adapter），将一个类的接口转换成客户希望的另外一个接口。Adapter模式使得原本由于接口不兼容而不能一起工作的那些类可以一起工作。[DP]
+
+适配器模式主要解决什么问题呢？简单地说，就是需要的东西就在面前，但却不能使用，而短时间又无法改造它，于是我们就想办法适配它。有些国家用110 V电压，而我们国家用的是220 V，但我们的电器，比如笔记本电脑是不能什么电压都能用的，但国家不同，电压可能不相同也是事实，于是就用一个电源适配器，只要是电，不管多少伏，都能把电源变成需要的电压，这就是电源适配器的作用。适配器的意思就是使得一个东西适合另一个东西的东西。
+
+什么时候使用?系统的数据和行为都正确，但接口不符时，我们应该考虑用适配器，目的是使控制范围之外的一个原有对象与某个接口匹配。适配器模式主要应用于希望复用一些现存的类，但是接口又与复用环境要求不一致的情况
+
+在GoF的设计模式中，对适配器模式讲了两种类型，类适配器模式和对象适配器模式，由于类适配器模式通过多重继承对一个接口与另一个接口进行匹配，而C#、VB.NET、JAVA等语言都不支持多重继承（C++支持），也就是一个类只有一个父类，所以我们这里主要讲的是对象适配器。
+
+适配器结构图
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305151942375.png)
+
+Target（这是客户所期待的接口。目标可以是具体的或抽象的类，也可以是接口），代码如下
+
+```php
+class Target{
+    public function Request() {
+        echo '普通请求';
+    }
+}
+```
+
+Adaptee（需要适配的类）代码如下：
+
+```php
+class Adaptee
+{
+    public function SpecificRequest() {
+        echo "特殊请求";
+    }
+}
+```
+
+Adapter（通过在内部包装一个Adaptee对象，把源接口转换成目标接口）代码如下
+
+```php
+class Adapter extends Target {
+    private $adaptee;
+    
+    public function __construct() {
+        $this->adaptee = new Adaptee();
+    }
+    
+    public function Request() {
+        $this->adaptee->SpecificRequest();
+    }
+}
+```
+
+客户端代码
+
+```php
+$target = new Adapter();
+$target->Request();
+```
+
+### 17.3 何时使用适配器模式
+
+两个类所做的事情相同或相似，但是具有不同的接口时要使用它。客户代码可以统一调用同一接口就行了，这样应该可以更简单、更直接、更紧凑。
+
+好的设计用不上适配器模式的。在双方都不太容易修改的时候再使用适配器模式适配
+
+## 第十八章 备忘录模式
+
+### 18.3 备忘录模式
+
+备忘录（Memento）：在不破坏封装性的前提下，捕获一个对象的内部状态，并在该对象之外保存这个状态。这样以后就可将该对象恢复到原先保存的状态。[DP]
+
+结构图如下
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305151956721.png)
+
+Originator（发起人）：负责创建一个备忘录Memento，用以记录当前时刻它的内部状态，并可使用备忘录恢复内部状态。Originator可根据需要决定Memento存储Originator的哪些内部状态。
+
+Memento（备忘录）：负责存储Originator对象的内部状态，并可防止Originator以外的其他对象访问备忘录Memento。备忘录有两个接口，Caretaker只能看到备忘录的窄接口，它只能将备忘录传递给其他对象。Originator能够看到一个宽接口，允许它访问返回到先前状态所需的所有数据。
+
+Caretaker（管理者）：负责保存好备忘录Memento，不能对备忘录的内容进行操作或检查。
+
+### 18.4 备忘录模式的基本代码
+
+发起人（Originator）类
+
+```php
+class Originator {
+    /**
+    * @var string 
+    */
+    private  $state;
+    
+    public function setState(string $state) 
+    {
+        $this->state = $state;
+    }
+    
+    public function getState() : string
+    {
+        return $this->state;
+    }
+    
+    public function CreateMemento() 
+    {
+        return (new Memento($this->state));
+    }
+    
+    public function SetMemento(Memento $memento) 
+    {
+        $this->state = $memento->state;
+    }
+    
+    public function Show() {
+        echo '当前状态'.$this->state;
+    }
+}
+```
+
+备忘录（Memento）类
+
+```php
+class Memento{
+    /**
+    * @var string  
+    */
+    private $state; 
+    
+    public function __construct(string $state) 
+    {
+        $this->state = $state;
+    }
+    
+    public function getState() : string
+    {
+        return $this->state;
+    }
+}
+```
+
+管理者（Caretaker）类
+
+```php
+class Caretaker{
+    /**
+    * @var Memento  
+    */
+    private $memento; 
+    
+    public function setMemento(Memento $memento) 
+    {
+        $this->memento = $memento;
+    }
+    
+    public function getMemento() : Memento
+    {
+        return $this->memento;
+    }
+}
+```
+
+客户端代码
+
+```php
+$o = new Originator();
+$o->State = "On";
+
+$c = new Caretaker();
+$c->setMemento($o->CreateMemento());
+
+$o->State = "Off";
+$o->Show(); 
+
+$o->SetMemento($c->getMemento());
+$o->Show(); 
+```
+
+Memento模式比较适用于功能比较复杂的，但需要维护或记录属性历史的类，或者需要保存的属性只是众多属性中的一小部分时，Originator可以根据保存的Memento信息还原到前一状态
+
+如果在某个系统中使用命令模式时，需要实现命令的撤销功能，那么命令模式可以使用备忘录模式来存储可撤销操作的状态[DP]
+
+### 18.5 练习
+
+看书
