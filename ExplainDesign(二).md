@@ -150,3 +150,154 @@ Leaf类当中不用Add和Remove方法，可以吗？当然是可以，那么就�
 ### 19.6 组合模式的好处
 
 好处：组合对象的类层次结构。基本对象可以被组合成更复杂的组合对象，而这个组合对象又可以被组合，这样不断地递归下去，客户代码中，任何用到基本对象的地方都可以使用组合对象了。用户是不用关心到底是处理一个叶节点还是处理一个组合组件，也就用不着为定义组合而写一些选择判断语句了。组合模式让客户可以一致地使用组合结构和单个对象
+
+## 第二十二章
+
+### 22.2 紧耦合的程序演化
+
+这里去看书理解。
+
+### 22.3 合成/聚合原则
+
+合成/聚合复用原则：尽量使用合成／聚合，尽量不要使用类继承。[J&DP]
+
+合成（Composition，也有翻译成组合）和聚合（Aggregation）都是关联的特殊种类。聚合表示一种弱的‘拥有’关系，体现的是A对象可以包含B对象，但B对象不是A对象的一部分；合成则是一种强的‘拥有’关系，体现了严格的部分和整体的关系，部分和整体的生命周期一样[DPE]。比方说，大雁有两个翅膀，翅膀与大雁是部分和整体的关系，并且它们的生命周期是相同的，于是大雁和翅膀就是合成关系。而大雁是群居动物，所以每只大雁都是属于一个雁群，一个雁群可以有多只大雁，所以大雁和雁群是聚合关系。”
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182002650.png)
+
+合成／聚合复用原则的好处是，优先使用对象的合成/聚合将有助于你保持每个类被封装，并被集中在单个任务上。这样类和类继承层次会保持较小规模，并且不太可能增长为不可控制的庞然大物[DP]。
+
+比如手机品牌和手机软件。手机品牌包含有手机软件，但软件并不是品牌的一部分，所以它们之间是聚合关系
+
+结构图如下：
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182005035.png)
+
+之前的结构图如下
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182006883.png)
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182007128.png)
+
+这两种都会产生很多类图，要注意理解，建议看书
+
+### 22.4 松耦合的程序
+
+手机软件抽象类如下
+
+```php
+abstract class HandsetSoft{
+    public abstract function Run();
+}
+```
+
+游戏、通讯录等具体类
+
+```php
+//手机游戏
+class HandsetGame extends HandsetSoft
+{
+    public function Run()
+    {
+        echo "运行手机游戏";
+    }
+}
+ 
+//手机通讯录
+class HandsetAddressList extends HandsetSoft
+{
+    public function Run()
+    {
+        echo "运行手机通讯录";
+    }
+}
+```
+
+手机品牌类
+```php
+abstract class HandsetBrand 
+{
+    /**
+    * @var HandsetSoft
+    */
+    protected $soft;
+    
+    // 设置手机软件
+    public function SetHandsetSoft(HandsetSoft $soft) 
+    {
+        // 品牌需要关注软件，所以在机器中安装软件，以备运行
+        $this->soft = $soft;
+    }
+}
+```
+
+品牌N品牌M具体类
+
+```php
+//手机品牌N
+class HandsetBrandN extends HandsetBrand
+{
+    public function Run()
+    {
+        $this->soft->Run();
+    }
+}
+ 
+//手机品牌M
+class HandsetBrandM extends HandsetBrand
+{
+    public function Run()
+    {
+         $this->soft->Run();
+    }
+}
+```
+
+客户端代码调用
+
+```php
+$ab = new HandsetBrandN();
+$ab->SetHandsetSoft(new HandsetGame());
+$ab->Run();
+
+$ab->SetHandsetSoft(new HandsetAddressList());
+$ab->Run();
+
+$ab = new HandsetBrandM();
+$ab->SetHandsetSoft(new HandsetGame());
+$ab->Run();
+
+$ab->SetHandsetSoft(new HandsetAddressList());
+$ab->Run();
+```
+
+开放-封闭原则。这样的设计显然不会修改原来的代码，而只是扩展类就行了。合成／聚合复用原则:也就是优先使用对象的合成或聚合，而不是类继承
+
+盲目使用继承当然就会造成麻烦，而其本质原因主要是什么？继承是一种强耦合的结构。父类变，子类就必须要变。用继承时，一定要在是‘is-a’的关系时再考虑使用，而不是任何时候都去使用
+
+### 22.5　桥接模式
+
+桥接模式（Bridge），将抽象部分与它的实现部分分离，使它们都可以独立地变化。
+
+这里需要理解一下，什么叫抽象与它的实现分离，这并不是说，让抽象类与其派生类分离，因为这没有任何意义。实现指的是抽象类和它的派生类用来实现自己的对象[DPE]。就刚才的例子而言，就是让‘手机’既可以按照品牌来分类，也可以按照功能来分类。
+
+将抽象部分与它的实现部分分离？这部分可以大概理解为实现系统可能有多角度分类，每一种分类都有可能变化，那么就把这种多角度分离出来让它们独立变化，减少它们之间的耦合。
+
+按品牌分类实现结构图
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182022448.png)
+
+安软件分类实现结构图
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182022640.png)
+
+由于实现的方式有多种，桥接模式的核心意图就是把这些实现独立出来，让它们各自地变化。这就使得每种实现的变化不会影响其他实现，从而达到应对变化的目的
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305182023366.png)
+
+## 22.6　桥接模式基本代码
+
+代码22.4足够了，需要的自己看书
+
+## 第二十三章 命令模式
+
