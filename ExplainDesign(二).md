@@ -301,3 +301,170 @@ $ab->Run();
 
 ## 第二十三章 命令模式
 
+烧烤结构图如下：
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305192005234.png)
+
+抽象命令类
+
+```php
+abstract class Command
+{
+    /**
+    * @var Barbecuer
+    */
+    protected $receiver;
+    
+    /** 
+    * 抽象命令类，只需要确认’烤肉串者‘是谁
+    * @param Barbecuer $receiver
+    */
+    public function __construct(Barbecuer $receiver) {
+        $this->receiver = $receiver;
+    }
+    
+    // 执行命令
+    public abstract function ExecuteCommand ();
+} 
+```
+
+具体命令类
+
+```php
+// 烤羊肉串命令
+class BakeMuttonCommand extends Commond
+{
+    // 执行命令
+    public function ExecuteCommand () 
+    {
+        $this->receiver->BakeMutton()
+    }
+} 
+
+// 烤鸡翅命令
+class BakeChickenWingCommand extends Commond
+{
+    // 执行命令
+    public function ExecuteCommand () 
+    {
+        $this->receiver->BakeChickenWing()
+    }
+} 
+```
+
+服务员类
+
+```php
+public class Waiter {
+    /**
+    * @var Command
+    */
+    private $command;
+    
+    /**
+    * 设置订单 
+    * @param Command $command
+    * @return void
+    */
+    public function SetOrder(Command $command) {
+        $this->command = $command;
+    }
+    
+    public function Notify() {
+        $this->command->ExecuteCommand();
+    }
+}
+```
+
+烤肉串者如下：
+
+```php
+//烤肉串者
+class Barbecuer
+{
+    //烤羊肉
+    public function BakeMutton()
+    {
+        echo "烤羊肉串!";
+    }
+    //烤鸡翅
+    public function BakeChickenWing()
+    {
+        echo "烤鸡翅!";
+    }
+}
+```
+
+客户端代码
+
+```php
+// 开店前准备
+$boy = new Barbecuer();
+$bakeMuttonCommand1 = new BakeMuttonCommand($boy);
+$bakeMuttonCommand2 = new BakeMuttonCommand($boy);
+$bakeChickenWingCommand1 = new BakeChickenWingCommand($boy);
+$girl = new Water();
+
+// 开门营业
+$girl->SetOrder($bakeMuttonCommand1);
+$girl->Notify();
+$girl->SetOrder($bakeMuttonCommand2);
+$girl->Notify();
+$girl->SetOrder($bakeChickenWingCommand1);
+$girl->Notify();
+```
+
+这里有几个问题，第一，真实的情况其实并不是用户点一个菜，服务员就通知厨房去做一个，那样不科学，应该是点完烧烤后，服务员一次通知制作；第二，如果此时鸡翅没了，不应该是客户来判断是否还有，客户哪知道有没有呀，应该是服务员或烤肉串者来否决这个请求；第三，客户到底点了哪些烧烤或饮料，这是需要记录日志的，以备收费，也包括后期的统计；第四，客户完全有可能因为点的肉串太多而考虑取消一些还没有制作的肉串。这些问题都需要得到解决
+
+修改如下
+
+服务员类
+```php
+class Waiter {
+    /**
+    * @var Comand[] 
+    */
+    private $orders = [];
+    
+    //设置订单
+    public function SetOrder(Command $command)
+    {
+        if(!$command) { // 假设没有
+            echo "服务员：鸡翅没有了，请点别的烧烤。"；
+        } else {
+           $this->orders[] =  $command;
+           echo '增加订单：'.$command->getname().' 时间：'.date('Y-m-d', time()); // 假装有getName方法记得自己写进去
+        }
+    }
+
+    //取消订单
+    public function CancelOrder(Command $command)
+    {
+        // 删除$orders里面的数据
+        
+        echo '取消订单：'.$command->getname().' 时间：'.date('Y-m-d', time()); // 假装有getName方法记得自己写进去
+    }
+
+    public function Notify() {
+        foreach ($orders as $command){
+            $command->ExecuteCommand();
+        }
+    }
+```
+
+客户端代码实现
+
+```php
+// 开店前准备
+$boy = new Barbecuer();
+$bakeMuttonCommand1 = new BakeMuttonCommand($boy);
+$bakeMuttonCommand2 = new BakeMuttonCommand($boy);
+$bakeChickenWingCommand1 = new BakeChickenWingCommand($boy);
+$girl = new Water();
+
+// 开门营业
+$girl->SetOrder($bakeMuttonCommand1);
+$girl->SetOrder($bakeMuttonCommand2);
+$girl->SetOrder($bakeChickenWingCommand1);
+$girl->Notify();
+```
