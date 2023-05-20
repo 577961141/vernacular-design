@@ -468,3 +468,445 @@ $girl->SetOrder($bakeMuttonCommand2);
 $girl->SetOrder($bakeChickenWingCommand1);
 $girl->Notify();
 ```
+
+### 23.6 命令模式
+
+命令模式（Command）将一个请求封装为一个对象，从而使你可用不同的请求对客户进行参数化；对请求排队或记录请求日志，以及支持可撤销的操作。[DP]
+
+命令模式结构图
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305201008804.png)
+
+Command类，用来声明执行操作的接口
+
+```php
+abstract class Command 
+{
+    /**
+    * @var Receiver 
+    */
+    protected $receiver;
+    
+    public function __construct(Receiver $receiver) 
+    {
+        $this->receiver = $receiver;
+    }
+    
+    abstract public function Execute();
+}
+```
+
+ConcreteCommand类，将一个接收者对象绑定于一个动作，调用接收者相应的操作，以实现Execute。
+
+```php
+class ConcreteCommand extends Command
+{
+    public function Execute() 
+    {
+        $this->receiver->Action();
+    }
+}
+```
+
+Invoker类，要求该命令执行这个请求。
+
+```php
+class Invoker 
+{
+    /**
+    * @var  Command
+    */
+    private $command;
+    
+    public function SetCommand(Command $command) 
+    {
+        $this->command = $command;
+    }
+    
+    public function ExecuteCommand() 
+    {
+        $this->command->Execute();
+    }
+}
+```
+
+Receiver类，知道如何实施与执行一个与请求相关的操作，任何类都可能作为一个接收者。
+
+```php
+class Receiver
+{
+    public function Action() 
+    {
+        echo "执行请求"."</br>";
+    }
+}
+```
+
+客户端代码，创建一个具体命令对象并设定它的接收者。
+
+```php
+$r = new Receiver();
+$c = new ConcreteComponent($r);
+$i = new Invoker();
+$i->SetCommand($c)
+$i->ExecuteCommand();
+```
+
+### 23.7 命令模式的作用
+
+作用：
+- 第一，它能较容易地设计一个命令队列；
+- 第二，在需要的情况下，可以较容易地将命令记入日志；
+- 第三，允许接收请求的一方决定是否要否决请求。
+- 第四，可以容易地实现对请求的撤销和重做；
+- 第五，由于加进新的具体命令类不影响其他的类，因此增加新的具体命令类很容易
+
+优点：命令模式把请求一个操作对象与知道怎么执行一个操作对象分割开。
+
+**敏捷开发原则**不要为代码添加基于猜测的、实际上不需要的功能。如果不清楚一个系统是否需要命令模式，一般不要着急去实现它，事实上，在需要的时候通过重构实现这个模式并不困难。只有在真正需要如撤销/恢复操作等功能时，把原来的代码重构为命令模式才有意义。
+
+## 第二十四章 责任链模式
+
+### 24.3 职责链模式
+职责链模式（Chain of Responsibility）：使多个对象都有机会处理请求，从而避免请求的发送者和接收者之间的耦合关系。将这个对象连成一条链，并沿着这条链传递该请求，直到有一个对象处理它为止。[DP]
+
+### 24.4 职责链的好处
+
+这当中最关键的是当客户提交一个请求时，请求是沿链传递直至有一个ConcreteHandler对象负责处理它。[DP]
+
+接收者和发送者都没有对方的明确信息，且链中的对象自己也并不知道链的结构。结果是职责链可简化对象的相互连接，它们仅需保持一个指向其后继者的引用，而不需保持它所有的候选接受者的引用[DP]
+
+由于是在客户端来定义链的结构，也就是说，我可以随时地增加或修改处理一个请求的结构。增强了给对象指派职责的灵活性[DP]。不过也要当心，一个请求极有可能到了链的末端都得不到处理，或者因为没有正确配置而得不到处理，这就很糟糕了。需要事先考虑全面。
+
+
+
+### 24.5 加薪代码重构
+
+代码结构图如下
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305201049291.png)
+
+管理者
+```php
+abstract class Manager 
+{
+    /**
+    * @var string 
+    */
+    protected $name;
+    
+    /**
+    * @var Manager 管理者的上级
+    */
+    protected $superior;
+    
+    function __construct(string $name) 
+    {
+        $this->name = $name;    
+    }
+    
+    /**
+    * 设置管理者的上层
+    * @param Manager $superior
+    * @return void
+    */
+    public function SetSuperior(Manager $superior) 
+    {
+        $this->superior = $superior;
+    }
+    
+    abstract public function RequestApplications(Request $request);
+}
+```
+
+“经理类就可以去继承这个‘管理者’类，只需重写‘申请请求’的方法就可以了。”
+
+```php
+class CommonManger extends Manger 
+{
+    public function RequestApplications(Request $request) {
+        if ($request->getRequestType() == "请假" && $request->getNumber() <= 2) {
+            echo $this->name.":".$request->getRequestContent().'数量'.$request->getNumber().'被批准。'."</br>";
+        } else {
+            if ($superior != null) {
+                $this->RequestApplications($request);
+            }
+        }
+    }
+}
+```
+
+“‘总监’类同样继承‘管理者类’。”
+
+```php
+class Majordomo extends Manger 
+{
+    public function RequestApplications(Request $request) {
+        if ($request->getRequestType() == "请假" && $request->getNumber() <= 5) {
+            echo $this->name.":".$request->getRequestContent().'数量'.$request->getNumber().'被批准。'."</br>";
+        } else {
+            if ($superior != null) {
+                $this->RequestApplications($request);
+            }
+        }
+    }
+}
+```
+
+“‘总经理’的权限就是全部都需要处理。”
+
+```php
+class GeneralManager extends Manger 
+{
+    public function RequestApplications(Request $request) {
+        if ($request->getRequestType() == "请假") {
+            echo $this->name.":".$request->getRequestContent().'数量'.$request->getNumber().'被批准。'."</br>";
+        } else if ($request->getRequestType() == "加薪" && $request->getNumber() <= 500) {
+            echo $this->name.":".$request->getRequestContent().'数量'.$request->getNumber().'被批准。'."</br>"
+        } else if ($request->getRequestType() == "加薪" && $request->getNumber() <= 500) {
+            echo $this->name.":".$request->getRequestContent().'数量'.$request->getNumber().'再说吧。'."</br>"
+        }
+    }
+}
+```
+
+request类
+```php
+//申请
+class Request
+{
+    /** 
+    * @var string 申请类别
+    */
+    private $requestType;
+    
+    /**
+    * @return string
+    */ 
+    public  function getRequestType(): string
+    {
+        return $this->requestType;
+    }
+    
+    /**
+    * @param string $requestType
+    */
+    public  function setRequestType(string $requestType):void {
+        $this->requestType = $requestType;
+    }
+ 
+     /** 
+    * @var string 申请内容
+    */
+    private $requestContent;
+    /**
+    * @return string
+    */ 
+    public  function getRequestContent(): string
+    {
+        return $this->requestContent;
+    }
+    
+    /**
+    * @param string $requestType
+    */
+    public  function setRequestContent(string $requestContent):void {
+        $this->requestContent = $requestContent;
+    }
+ 
+    /** 
+    * @var int 数量
+    */
+    private $number;
+    /**
+    * @return int
+    */ 
+    public  function getNumber(): int
+    {
+        return $this->number;
+    }
+    
+    /**
+    * @param int $number
+    */
+    public  function setRequestContent(string $number):void {
+        $this->number = $number;
+    }
+}
+```
+
+一个抽象类和三个具体类，此时类之间的灵活性就大大增加了，如果我们需要扩展新的管理者类别，只需要增加子类就可以。当然，还有一个关键，那就是客户端如何编写。”
+
+```php
+$jinli = new CommonManger("金立");
+$zongjian = new Majordomo("总剑");
+$zhongjingli = new GeneralManager("中经历");
+
+// 设置上级
+$jinli->SetSuperior($zongjian);
+$zongjian->SetSuperior($zhongjingli);
+
+$request = new Request();
+$request->setRequestType("请假");
+$request->setRequestContent("小菜请假");
+$request->setNumber(1);
+$jinli->RequestApplications($request);
+
+$request = new Request();
+$request->setRequestType("请假");
+$request->setRequestContent("小菜请假");
+$request->setNumber(4);
+$jinli->RequestApplications($request);
+
+$request = new Request();
+$request->setRequestType("加薪");
+$request->setRequestContent("小菜请求加薪");
+$request->setNumber(500);
+$jinli->RequestApplications($request);
+
+$request = new Request();
+$request->setRequestType("加薪");
+$request->setRequestContent("小菜请求加薪");
+$request->setNumber(1000);
+$jinli->RequestApplications($request);
+```
+
+很好地解决了原来大量的分支判断造成难维护、灵活性差的问题
+
+## 第二十五章 中介者模式
+
+### 25.1
+
+中介者模式与迪米特法则的关系。（中介者是迪米特法则的最好解释）
+
+尽管将一个系统分割成许多对象通常可以增加其可复用性，但是对象间相互连接的激增又会降低其可复用性了。
+
+大量的连接使得一个对象不可能在没有其他对象的支持下工作，系统表现为一个不可分割的整体，所以，对系统的行为进行任何较大的改动就十分困难了。
+
+### 25.2 中介者模式
+
+结构图如下
+
+![](https://cdn.jsdelivr.net/gh/577961141/static@master/202305201133335.png)
+
+“Colleague叫做抽象同事类，而ConcreteColleague是具体同事类，每个具体同事只知道自己的行为，而不了解其他同事类的情况，但它们却都认识中介者对象，Mediator是抽象中介者，定义了同事对象到中介者对象的接口，ConcreteMediator是具体中介者对象，实现抽象类的方法，它需要知道所有具体同事类，并从具体同事接收消息，向具体同事对象发出命令。”
+
+Mediator类　抽象中介者类
+```php
+/**
+*   定义一个抽象的发送消息方法，得到同事对象和发送信息 
+*/
+abstract class mediator
+{
+    public abstract function (string $message, Colleague $colleague);
+}
+```
+
+Colleague类　抽象同事类
+
+```php
+abstract class Colleague
+{   
+    /**
+    * @var Mediator
+    */
+    protected $mediator;
+    
+    public function __construct(Mediator $mediator) 
+    {
+        $this->mediator = $mediator; // 得到中介对象
+    }
+}
+```
+
+ConcreteMediator类　具体中介者类
+```php
+class ConcreteMediator extends Mediator
+{
+    /**
+    * @var ConcreteColleague1
+    */
+    private $colleague1;
+    
+    /**
+    * @var ConcreteColleague2
+    */
+    private $colleague2;
+    
+    /**
+    * @param ConcreteColleague1 $colleague1
+    */
+    public  function setColleague1(ConcreteColleague1 $colleague1):void {
+        $this->colleague1 = $colleague1;
+    }
+    
+    /**
+    * @param ConcreteColleague2 $colleague2
+    */
+    public  function setColleague2(ConcreteColleague2 $colleague2):void {
+        $this->colleague2 = $colleague2;
+    }
+    
+    public function Send(string $message, Colleague $colleague) {
+        if ($colleague == $this->colleague1) {
+            $this->colleague2->Notify($message)
+        } else {
+            $this->colleague1->Notify($message)
+        }
+    }
+}
+```
+
+ConcreteColleague1和ConcreteColleague2等各种同事对象
+
+```php
+class ConcreteColleague1 extends Colleague
+{
+    public function Send(string $message) 
+    {
+        $this->mediator->Send($message, $this);
+    }
+    
+    public function Notify(string $message) 
+    {
+        echo "同事1得到消息".$message."</br>"
+    }
+}
+
+class ConcreteColleague2 extends Colleague
+{
+    public function Send(string $message) 
+    {
+        $this->mediator->Send($message, $this);
+    }
+    
+    public function Notify(string $message) 
+    {
+        echo "同事2得到消息".$message."</br>"
+    }
+}
+```
+
+客户端调用
+
+```php
+$m = new ConcreteMediator();
+$c1 = new ConcreteColleague1($m);
+$c2 = new ConcreteColleague2($m);
+
+$m->colleague1 = $c1;
+$m->colleague2 = $c2;
+
+$c1->Send('吃过饭了吗？');
+$c2->Send('没有呢，你打算请客？');
+```
+
+### 25.4 中介者模式的优缺点
+
+中介者模式很容易在系统中应用，也很容易在系统中误用。当系统出现了‘多对多’交互复杂的对象群时，不要急于使用中介者模式，而要先反思你的系统在设计上是不是合理。
+
+中介者模式的优点首先是Mediator的出现减少了各个Colleague的耦合，使得可以独立地改变和复用各个Colleague类和Mediator。其次，由于把对象如何协作进行了抽象，将中介作为一个独立的概念并将其封装在一个对象中，这样关注的对象就从对象各自本身的行为转移到它们之间的交互上来，也就是站在一个更宏观的角度去看待系统。
+
+缺点：具体中介者类ConcreteMediator可能会因为ConcreteColleague的越来越多，而变得非常复杂，反而不容易维护了。由于ConcreteMediator控制了集中化，于是就把交互复杂性变为了中介者的复杂性，这就使得中介者会变得比任何一个ConcreteColleague都复杂。
+
+场合：中介者模式一般应用于一组对象以定义良好但是复杂的方式进行通信的场合。以及想定制一个分布在多个类中的行为，而又不想生成太多的子类的场合
